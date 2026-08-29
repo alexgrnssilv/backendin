@@ -1,0 +1,27 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Carta {
+  id              String   @id @default(uuid())
+  nomeMae         String
+  nomeRemetente   String
+  comoChama       String
+  caracteristicas String   @db.Text
+  lembranca       String   @db.Text
+  agradecimento   String   @db.Text
+  admiracao       String   @db.Text
+  mensagemFinal   String   @db.Text
+  fotoUrl         String?
+  emailComprador  String?
+  linkUnico       String   @unique @default(uuid())
+  statusPagamento String   @default("pendente")
+  mercadoPagoId   String?
+  liberada        Boolean  @default(false)
+  criadoEm        DateTime @default(now())
+}

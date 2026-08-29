@@ -17,6 +17,7 @@ if (smtpConfigured) {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    family: 4, // Força o uso de IPv4 (evita erro ENETUNREACH de IPv6 no Render)
   });
 }
 

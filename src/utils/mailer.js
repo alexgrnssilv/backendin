@@ -1,31 +1,14 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-const smtpConfigured =
-  process.env.SMTP_HOST &&
-  process.env.SMTP_PORT &&
-  process.env.SMTP_USER &&
-  process.env.SMTP_PASS;
-
-let transporter = null;
-
-if (smtpConfigured) {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: process.env.SMTP_PORT === "465", // true for 465, false for other ports
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    family: 4, // Força o uso de IPv4 (evita erro ENETUNREACH de IPv6 no Render)
-  });
-}
+const resendApiKey = process.env.RESEND_API_KEY;
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 export async function enviarEmailCarta(emailDestino, nomeMae, linkUnico) {
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
   const linkCarta = `${frontendUrl}/carta/${linkUnico}`;
+  const remetente = process.env.SMTP_FROM || "Carta Digital <onboarding@resend.dev>";
+  const assunto = `Sua Carta Digital para ${nomeMae} está disponível! ❤️`;
 
-  const assunto = `Sua Carta Digital para ${nomeMae} está disponível!`;
   const corpoHtml = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f3e8e8; border-radius: 12px; background-color: #fffafb;">
       <h2 style="color: #e11d48; text-align: center;">Sua Carta Digital está pronta! ❤️</h2>
@@ -51,9 +34,9 @@ export async function enviarEmailCarta(emailDestino, nomeMae, linkUnico) {
     </div>
   `;
 
-  if (!smtpConfigured) {
+  if (!resend) {
     console.log("==================================================");
-    console.warn("⚠️ SMTP NÃO CONFIGURADO. SIMULANDO ENVIO DE E-MAIL:");
+    console.warn("⚠️ RESEND_API_KEY não configurado. SIMULANDO ENVIO:");
     console.log(`Para: ${emailDestino}`);
     console.log(`Assunto: ${assunto}`);
     console.log(`Link da Carta: ${linkCarta}`);
@@ -62,15 +45,20 @@ export async function enviarEmailCarta(emailDestino, nomeMae, linkUnico) {
   }
 
   try {
-    const remetente = process.env.SMTP_FROM || `"Carta Digital" <${process.env.SMTP_USER}>`;
-    await transporter.sendMail({
+    const { data, error } = await resend.emails.send({
       from: remetente,
       to: emailDestino,
       subject: assunto,
       html: corpoHtml,
     });
-    console.log(`E-mail com link da carta enviado com sucesso para ${emailDestino}`);
+
+    if (error) {
+      console.error("Resend retornou erro ao enviar e-mail:", error);
+      return;
+    }
+
+    console.log(`E-mail com link da carta enviado com sucesso para ${emailDestino}. ID: ${data?.id}`);
   } catch (error) {
-    console.error("Falha ao enviar e-mail da carta:", error);
+    console.error("Falha ao enviar e-mail via Resend:", error);
   }
 }

@@ -126,12 +126,13 @@ router.post("/cartas", createLetterLimiter, async (req, res) => {
 
     // Setup Mercado Pago preference details
     const baseUrl = process.env.BASE_URL || "http://localhost:3001";
+    const frontendUrl = process.env.FRONTEND_URL || baseUrl;
     
-    // Build redirect urls for sandbox or live checkouts
+    // Build redirect urls for sandbox or live checkouts pointing to the frontend (Vercel)
     const backUrls = {
-      success: `${baseUrl}/sucesso?linkUnico=${linkUnico}`,
-      failure: `${baseUrl}/sucesso?linkUnico=${linkUnico}`,
-      pending: `${baseUrl}/sucesso?linkUnico=${linkUnico}`,
+      success: `${frontendUrl}/sucesso?linkUnico=${linkUnico}`,
+      failure: `${frontendUrl}/sucesso?linkUnico=${linkUnico}`,
+      pending: `${frontendUrl}/sucesso?linkUnico=${linkUnico}`,
     };
 
     // Create Preference using Mercado Pago Client

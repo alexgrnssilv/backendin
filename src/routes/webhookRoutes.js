@@ -2,6 +2,7 @@ import express from "express";
 import { paymentClient } from "../config/mercadopago.js";
 import prisma from "../config/db.js";
 import crypto from "crypto";
+import { enviarEmailCarta } from "../utils/mailer.js";
 
 const router = express.Router();
 
@@ -128,6 +129,12 @@ router.post("/webhook/mercadopago", async (req, res) => {
     });
 
     console.log(`Carta ID ${updatedCarta.id} atualizada com sucesso. Status Interno: ${statusInterno}, Liberada: ${updatedCarta.liberada}`);
+
+    // Disparar envio de email se aprovado e houver e-mail cadastrado
+    if (liberada && updatedCarta.emailComprador) {
+      enviarEmailCarta(updatedCarta.emailComprador, updatedCarta.nomeMae, updatedCarta.linkUnico)
+        .catch((err) => console.error("Erro assíncrono ao enviar email da carta:", err));
+    }
   } catch (error) {
     // Log the error but return 200 OK so that MP doesn't loop forever
     console.error("Erro ao processar webhook do Mercado Pago:", error);
